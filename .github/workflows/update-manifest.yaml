@@ -1,53 +1,23 @@
-name: Update EBS CSI Role in Manifests Repo
+name: terraform tests
 
 on:
   push:
     branches:
       - main
-    paths:
-      - "modules/eks_cluster/ebs_csi_driver/**"
-
-  workflow_dispatch:
 
 jobs:
-  update-manifests:
+  terraform-tests:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Terraform Repo
         uses: actions/checkout@v4
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
+      - name: Lint Terraform
+        uses: actionshub/terraform-lint@main
+      
+      - name: Test with Checkov
+        id: checkov
+        uses: bridgecrewio/checkov-action@main
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: eu-north-1
-
-      - name: Install Terraform
-        uses: hashicorp/setup-terraform@v2
-
-      - name: Terraform Init & Apply
-        run: |
-          terraform init
-          terraform apply -auto-approve
-
-      - name: Get EBS CSI Role ARN from Terraform
-        run: echo "EBSCSI_ROLE=$(terraform output -raw ebs_csi_role_arn)" >> $GITHUB_ENV
-
-      - name: Checkout Manifests Repo
-        uses: actions/checkout@v4
-        with:
-          repository: your-github-org/stockpnl_manifests
-          token: ${{ secrets.PAT }}
-
-      - name: Update ServiceAccount YAML
-        run: |
-          sed -i 's|eks.amazonaws.com/role-arn:.*|eks.amazonaws.com/role-arn: "${{ env.EBSCSI_ROLE }}"|' aws-ebs-csi-driver/sa.yaml
-
-      - name: Commit & Push Changes
-        run: |
-          git config --global user.email "bot@yourdomain.com"
-          git config --global user.name "GitOps Bot"
-          git add aws-ebs-csi-driver/sa.yaml
-          git commit -m "Update EBS CSI Role ARN from Terraform"
-          git push origin main
+          directory: tf
+          framework: terraform 
