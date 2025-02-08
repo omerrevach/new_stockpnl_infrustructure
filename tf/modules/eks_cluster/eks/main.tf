@@ -18,8 +18,8 @@ resource "aws_iam_role_policy_attachment" "eks" {
 }
 
 resource "aws_security_group" "eks_cluster" {
-  name        = "${var.name}-eks-cluster-sg"
-  vpc_id      = var.vpc_id
+  name   = "${var.name}-eks-cluster-sg"
+  vpc_id = var.vpc_id
 
   ingress {
     from_port   = 443
@@ -59,10 +59,16 @@ resource "aws_eks_cluster" "eks" {
   depends_on = [aws_iam_role_policy_attachment.eks]
 }
 
+# Fetch OIDC Thumbprint
 data "tls_certificate" "eks_oidc_thumbprint" {
   url = aws_eks_cluster.eks.identity[0].oidc[0].issuer
 }
 
+data "aws_eks_cluster_auth" "eks" {
+  name = aws_eks_cluster.eks.name
+}
+
+# Create OpenID Connect Provider
 resource "aws_iam_openid_connect_provider" "eks" {
   client_id_list  = ["sts.amazonaws.com"]
   thumbprint_list = [data.tls_certificate.eks_oidc_thumbprint.certificates[0].sha1_fingerprint]

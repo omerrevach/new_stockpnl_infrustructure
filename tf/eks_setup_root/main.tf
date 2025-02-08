@@ -21,14 +21,18 @@ module "node_groups" {
   private_subnet_ids = data.terraform_remote_state.vpc.outputs.private_subnets
 }
 
+
 module "ebs_csi_driver" {
-  source        = "../modules/eks_cluster/ebs_csi_driver"
-  cluster_name  = module.eks.cluster_name
-  region        = "eu-north-1"
+  source               = "../modules/eks_cluster/ebs_csi_driver"
+  cluster_name         = module.eks.cluster_name
+  oidc_provider_arn    = module.eks.cluster_oidc_provider_arn
+  eks_cluster_endpoint = module.eks.cluster_endpoint
+  eks_cluster_token    = module.eks.cluster_token
+  eks_cluster_ca       = module.eks.cluster_ca
 }
 
-module "secrets" {
-  source        = "../modules/secrets"
-  cluster_name  = module.eks.cluster_name
-  region        = "eu-north-1"
-}
+# module "secrets" {
+#   source        = "../modules/secrets"
+#   cluster_name  = module.eks.cluster_name
+#   region        = "eu-north-1"
+# }
