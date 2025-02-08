@@ -104,3 +104,5 @@ aws eks delete-cluster --name stockpnl
 ## 📜 License
 
 This repository is licensed under the MIT License. See LICENSE for details.
+
+aws eks update-kubeconfig --region eu-north-1 --name stockpnl

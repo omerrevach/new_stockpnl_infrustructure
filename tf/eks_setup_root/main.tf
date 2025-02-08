@@ -31,8 +31,14 @@ module "ebs_csi_driver" {
   eks_cluster_ca       = module.eks.cluster_ca
 }
 
-# module "secrets" {
-#   source        = "../modules/secrets"
-#   cluster_name  = module.eks.cluster_name
-#   region        = "eu-north-1"
-# }
+data "aws_caller_identity" "current" {}
+
+module "secrets" {
+  source               = "../modules/eks_cluster/secrets"
+  oidc_provider_arn    = module.eks.cluster_oidc_provider_arn
+  eks_cluster_endpoint = module.eks.cluster_endpoint
+  eks_cluster_token    = module.eks.cluster_token
+  eks_cluster_ca       = module.eks.cluster_ca
+  region               = "eu-north-1"
+  account_id           = data.aws_caller_identity.current.account_id
+}
