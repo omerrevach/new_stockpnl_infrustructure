@@ -1,7 +1,7 @@
 module "vpc" {
-  source      = "../modules/networking/vpc"
-  cidr_block  = "10.0.0.0/16"
-  name        = var.name
+  source     = "../modules/networking/vpc"
+  cidr_block = "10.0.0.0/16"
+  name       = var.name
 }
 
 module "igw" {
@@ -32,8 +32,8 @@ module "route" {
   vpc_id                            = module.vpc.vpc_id
   igw_id                            = module.igw.igw_id
   nat_instance_network_interface_id = module.nat.nat_instance_network_interface_id
-  public_subnet_ids                  = module.subnets.public_subnets
-  private_subnet_ids                 = module.subnets.private_subnets
+  public_subnet_ids                 = module.subnets.public_subnets
+  private_subnet_ids                = module.subnets.private_subnets
   name                              = var.name
 }
 //

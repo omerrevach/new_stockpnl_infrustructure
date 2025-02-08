@@ -24,7 +24,7 @@ provider "helm" {
 resource "aws_iam_policy" "secrets_manager_policy" {
   name        = "ExternalSecretsAccessPolicy"
   description = "Allow ESO to read AWS Secrets Manager"
-  policy      = jsonencode({
+  policy = jsonencode({
     Version = "2012-10-17",
     Statement = [
       {

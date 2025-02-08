@@ -1,15 +1,15 @@
 variable "vpc_id" {
-  type        = string
+  type = string
 }
 
 variable "public_cidrs" {
-  type        = list(string)
+  type = list(string)
 }
 
 variable "private_cidrs" {
-  type        = list(string)
+  type = list(string)
 }
 
 variable "name" {
-  type        = string
+  type = string
 }
