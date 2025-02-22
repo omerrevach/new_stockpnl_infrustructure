@@ -1,108 +1,60 @@
 # 📌 StockPNL Infrastructure
 
-### 📖 Overview
+## 📖 Overview
 
-This repository contains the Terraform code to deploy and manage the StockPNL infrastructure on AWS. It provisions an EKS cluster, manages IAM roles, and installs AWS EBS CSI Driver for persistent storage. It follows GitOps principles, ensuring declarative infrastructure management.
+This repository contains the **Terraform code** to deploy and manage the **StockPNL infrastructure** on AWS. It provisions an **Amazon EKS cluster**, manages IAM roles, and installs necessary controllers such as **AWS Load Balancer Controller** and **Contour Ingress Controller** for efficient traffic management.
+
+Additionally, this setup **integrates External Secrets Operator** with **AWS Secrets Manager**, allowing Kubernetes to securely manage secrets from AWS, ensuring sensitive configurations like database credentials and API keys are dynamically updated.
+
+This setup follows **GitOps principles**, ensuring declarative infrastructure management and automation using Terraform and Helm.
+
+---
 
 ## 🚀 Deployment Steps
 
-1️⃣ Configure AWS CLI & Connect to Cluster
-
-##### Ensure you are authenticated with AWS and set up the necessary access permissions:
-```
+### 1️⃣ Configure AWS CLI & Connect to Cluster
+Ensure you are authenticated with AWS and set up the necessary access permissions:
+```sh
+terraform init
+terraform apply -auto-approve
 aws eks update-kubeconfig --region eu-north-1 --name stockpnl
 ```
 
-2️⃣ Initialize & Apply Terraform
-```
-terraform init
-terraform apply -auto-approve
-```
+## This deploys:
+* Amazon EKS Cluster – Fully managed Kubernetes cluster.
+* IAM roles & policies – Required permissions for Kubernetes components.
+* AWS EBS CSI Driver – Persistent storage solution for EKS.
+* AWS Load Balancer Controller – For provisioning and managing AWS ALB/NLB.
+* Contour Ingress Controller – For handling ingress traffic efficiently.
 
-### This deploys:
+## ⚡ AWS Load Balancer Controller (ALB Controller)
 
-- AWS EKS Cluster
-- IAM roles for EKS & EBS CSI
-- AWS EBS CSI Driver via Helm
+The AWS Load Balancer Controller manages AWS Application Load Balancers (ALB) and Network Load Balancers (NLB) for Kubernetes applications. It automatically provisions ALBs when Kubernetes Ingress resources are deployed.
 
-### 🔍 Verifying Components
-Check EKS Cluster:
-```
-kubectl get nodes
-```
+Why Use It?
 
-Verify EBS CSI Driver
-```
-kubectl get pods -n kube-system | grep ebs
-```
-Check Installed Helm Releases
-```
-helm list -A
-```
+* Automatically creates and manages ALB/NLB in AWS.
+* Ensures secure routing and traffic control.
+* Enables features like SSL termination, URL path-based routing, and WAF integration.
 
-🛠️ Structure of the Repository
-```
-.
-├── tf/                          # Root Terraform module
-│   ├── main.tf                  # Calls all sub-modules
-│   ├── outputs.tf               # Outputs for the entire stack
-│   ├── vars.tf                  # Variables used in the root module
-│   └── README.md                 # This file
-│
-├── modules/
-│   ├── eks/                     # EKS Cluster Terraform module
-│   │   ├── main.tf
-│   │   ├── vars.tf
-│   │   ├── outputs.tf
-│   │   └── README.md
-│   │
-│   ├── nodegroup/               # Node group module
-│   │   ├── main.tf
-│   │   ├── vars.tf
-│   │   ├── outputs.tf
-│   │   └── README.md
-│   │
-│   ├── ebs_csi_driver/          # EBS CSI Driver Terraform module
-│   │   ├── main.tf
-│   │   ├── vars.tf
-│   │   ├── outputs.tf
-│   │   └── README.md
-│
-├── .github/workflows/           # CI/CD pipelines for automation
-│   ├── tf-tests.yaml
-│
-└── README.md                    # Project documentation
-```
 
-## 🔥 Troubleshooting
+## ⚡ Contour Ingress Controller
 
->IAM Role Already Exists Error
+Contour is a high-performance ingress controller designed for managing traffic to Kubernetes workloads. It uses Envoy Proxy to provide dynamic traffic routing, TLS termination, and HTTP/2 support.
 
-If you see EntityAlreadyExists: Role with name EBSCSIControllerRole already exists, delete the role manually:
-```
-aws iam list-attached-role-policies --role-name EBSCSIControllerRole
-aws iam detach-role-policy --role-name EBSCSIControllerRole --policy-arn <policy-arn>
-aws iam delete-role --role-name EBSCSIControllerRole
-```
+Why Use It?
 
-Then re-run Terraform:
-```
-terraform apply -auto-approve
-```
+* Provides advanced traffic management with high performance.
+* Works well with AWS ALB for external ingress and internal routing.
+* Supports multi-tenant applications with delegation capabilities.
 
->Cannot Delete EKS Cluster
-
-Ensure that all node groups and dependencies are deleted first:
-```
-aws eks delete-cluster --name stockpnl
-```
 
 ## 🎯 Future Improvements
-- Implement ArgoCD for full GitOps-based deployment.
-- Set up AWS Secrets Manager integration with External Secrets Operator.
+
+* Implement ArgoCD for full GitOps-based deployment.
+* Set up AWS Secrets Manager integration with External Secrets Operator.
+* Add service mesh support using Istio or Linkerd.
 
 ## 📜 License
 
 This repository is licensed under the MIT License. See LICENSE for details.
-
-aws eks update-kubeconfig --region eu-north-1 --name stockpnl
