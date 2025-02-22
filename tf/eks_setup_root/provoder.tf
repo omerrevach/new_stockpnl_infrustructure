@@ -1,5 +1,3 @@
-# eks/providers.tf
-
 terraform {
   required_providers {
     aws = {
@@ -15,7 +13,7 @@ terraform {
       version = "~> 2.0"
     }
     kubectl = {
-      source  = "gavinbunney/kubectl"  # Fixed source
+      source  = "gavinbunney/kubectl"
       version = ">= 1.7.0"
     }
     time = {
