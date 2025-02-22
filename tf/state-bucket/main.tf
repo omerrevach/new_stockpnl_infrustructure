@@ -37,7 +37,6 @@ resource "aws_s3_bucket_public_access_block" "terraform_state" {
   restrict_public_buckets = true
 }
 
-# Optional but recommended: DynamoDB table for state locking
 resource "aws_dynamodb_table" "terraform_locks" {
   name         = "terraform-state-locks"
   billing_mode = "PAY_PER_REQUEST"
@@ -49,7 +48,6 @@ resource "aws_dynamodb_table" "terraform_locks" {
   }
 }
 
-# outputs.tf
 output "s3_bucket_name" {
   value       = aws_s3_bucket.terraform_state.id
   description = "The name of the S3 bucket"

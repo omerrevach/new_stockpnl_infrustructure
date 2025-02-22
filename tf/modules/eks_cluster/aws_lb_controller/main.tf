@@ -1,21 +1,18 @@
-# Fetch the EKS Cluster details
 data "aws_eks_cluster" "eks" {
   name = var.cluster_name
 }
 
-# Fetch the OIDC Provider dynamically
+# fetch oidc provider dynamically
 data "aws_iam_openid_connect_provider" "eks" {
   url = data.aws_eks_cluster.eks.identity[0].oidc[0].issuer
 }
 
-# IAM Policy for AWS Load Balancer Controller from external JSON file
 resource "aws_iam_policy" "aws_load_balancer_controller" {
   name   = "AWSLoadBalancerControllerIAMPolicy"
   path   = "/"
   policy = file("${path.module}/AWSLoadBalancerController.json")
 }
 
-# IAM Role for AWS Load Balancer Controller
 resource "aws_iam_role" "aws_load_balancer_controller" {
   name = "aws-load-balancer-controller"
 
@@ -36,13 +33,12 @@ resource "aws_iam_role" "aws_load_balancer_controller" {
   })
 }
 
-# Attach IAM Policy to Role
 resource "aws_iam_role_policy_attachment" "aws_load_balancer_controller" {
   policy_arn = aws_iam_policy.aws_load_balancer_controller.arn
   role       = aws_iam_role.aws_load_balancer_controller.name
 }
 
-# Deploy AWS Load Balancer Controller via Helm
+# deply lb with helm
 resource "helm_release" "aws_load_balancer_controller" {
   name       = "aws-load-balancer-controller"
   repository = "https://aws.github.io/eks-charts"
@@ -92,7 +88,7 @@ resource "helm_release" "aws_load_balancer_controller" {
   }
 }
 
-# Wait for Load Balancer Controller to be ready
+# Wait for load balancer controller to be ready
 resource "time_sleep" "wait_for_alb_controller" {
   depends_on      = [helm_release.aws_load_balancer_controller]
   create_duration = "30s"

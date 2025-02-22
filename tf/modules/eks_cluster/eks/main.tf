@@ -59,7 +59,6 @@ resource "aws_eks_cluster" "eks" {
   depends_on = [aws_iam_role_policy_attachment.eks]
 }
 
-# Fetch OIDC Thumbprint
 data "tls_certificate" "eks_oidc_thumbprint" {
   url = aws_eks_cluster.eks.identity[0].oidc[0].issuer
 }
@@ -68,7 +67,6 @@ data "aws_eks_cluster_auth" "eks" {
   name = aws_eks_cluster.eks.name
 }
 
-# Create OpenID Connect Provider
 resource "aws_iam_openid_connect_provider" "eks" {
   client_id_list  = ["sts.amazonaws.com"]
   thumbprint_list = [data.tls_certificate.eks_oidc_thumbprint.certificates[0].sha1_fingerprint]

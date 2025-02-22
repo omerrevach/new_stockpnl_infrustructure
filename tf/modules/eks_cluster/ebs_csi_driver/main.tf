@@ -1,4 +1,3 @@
-# IAM Role for EBS CSI
 resource "aws_iam_role" "ebs_csi_role" {
   name = "EBSCSIControllerRole"
 
@@ -19,13 +18,11 @@ resource "aws_iam_role" "ebs_csi_role" {
   })
 }
 
-# Attach Policy to Role
 resource "aws_iam_role_policy_attachment" "ebs_csi_policy_attachment" {
   role       = aws_iam_role.ebs_csi_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
 }
 
-# Deploy AWS EBS CSI Driver via Helm
 resource "helm_release" "aws_ebs_csi_driver" {
   name       = "aws-ebs-csi-driver"
   repository = "https://kubernetes-sigs.github.io/aws-ebs-csi-driver"
