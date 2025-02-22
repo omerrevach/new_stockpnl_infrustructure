@@ -1,75 +1,89 @@
-provider "helm" {
-  kubernetes {
-    host                   = var.eks_cluster_endpoint
-    token                  = var.eks_cluster_token
-    cluster_ca_certificate = base64decode(var.eks_cluster_ca)
+data "aws_eks_cluster" "this" {
+  name = var.cluster_name
+}
+
+data "aws_caller_identity" "current" {}
+
+locals {
+  oidc_provider = replace(data.aws_eks_cluster.this.identity[0].oidc[0].issuer, "https://", "")
+  account_id    = data.aws_caller_identity.current.account_id
+}
+
+resource "kubernetes_namespace" "external_secrets" {
+  metadata {
+    name = "external-secrets"
   }
 }
 
-# IAM Policy for External Secrets Operator (ESO)
-resource "aws_iam_policy" "secrets_manager_policy" {
-  name        = "ExternalSecretsAccessPolicy"
-  description = "Allow ESO to read AWS Secrets Manager"
-  policy      = <<EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "secretsmanager:GetSecretValue",
-        "secretsmanager:DescribeSecret"
-      ],
-      "Resource": "arn:aws:secretsmanager:${var.region}:${var.account_id}:secret:*"
-    }
-  ]
-}
-EOF
+resource "aws_iam_policy" "external_secrets" {
+  name        = "${var.name}-external-secrets-policy"
+  description = "Policy for External Secrets Operator to access Secrets Manager"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "secretsmanager:GetSecretValue",
+          "secretsmanager:DescribeSecret",
+          "secretsmanager:ListSecrets"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
 }
 
-# IAM Role for ESO (Using IRSA)
-resource "aws_iam_role" "eso_role" {
-  name = "ESO_IRSA_Role"
+resource "aws_iam_role" "external_secrets" {
+  name = "${var.name}-external-secrets-role"
 
-  assume_role_policy = <<EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Principal": {
-        "Federated": "arn:aws:iam::${var.account_id}:oidc-provider/${replace(var.oidc_provider_arn, "https://", "")}"
-      },
-      "Action": "sts:AssumeRoleWithWebIdentity",
-      "Condition": {
-        "StringEquals": {
-          "${replace(var.oidc_provider_arn, "https://", "")}:sub": "system:serviceaccount:external-secrets:external-secrets-sa",
-          "${replace(var.oidc_provider_arn, "https://", "")}:aud": "sts.amazonaws.com"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Federated = "arn:aws:iam::${local.account_id}:oidc-provider/${local.oidc_provider}"
+        }
+        Action = "sts:AssumeRoleWithWebIdentity"
+        Condition = {
+          StringEquals = {
+            "${local.oidc_provider}:aud": "sts.amazonaws.com",
+            "${local.oidc_provider}:sub": "system:serviceaccount:external-secrets:external-secrets-sa"
+          }
         }
       }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "external_secrets" {
+  policy_arn = aws_iam_policy.external_secrets.arn
+  role       = aws_iam_role.external_secrets.name
+}
+
+resource "kubernetes_service_account" "external_secrets" {
+  metadata {
+    name      = "external-secrets-sa"
+    namespace = kubernetes_namespace.external_secrets.metadata[0].name
+    annotations = {
+      "eks.amazonaws.com/role-arn" = aws_iam_role.external_secrets.arn
     }
-  ]
-}
-EOF
-}
-
-# Attach IAM Policy to ESO Role
-resource "aws_iam_role_policy_attachment" "attach_secrets_policy" {
-  role       = aws_iam_role.eso_role.name
-  policy_arn = aws_iam_policy.secrets_manager_policy.arn
+  }
+  automount_service_account_token = true
 }
 
-# Install External Secrets Operator using Helm
 resource "helm_release" "external_secrets" {
   name             = "external-secrets"
   repository       = "https://charts.external-secrets.io"
   chart            = "external-secrets"
   namespace        = "external-secrets"
-  create_namespace = true
+  version          = "0.9.9"
 
   set {
     name  = "serviceAccount.create"
-    value = "true"
+    value = "false"
   }
 
   set {
@@ -79,6 +93,32 @@ resource "helm_release" "external_secrets" {
 
   set {
     name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
-    value = aws_iam_role.eso_role.arn
+    value = aws_iam_role.external_secrets.arn
   }
+
+  depends_on = [
+    kubernetes_namespace.external_secrets,
+    kubernetes_service_account.external_secrets
+  ]
+}
+
+resource "kubectl_manifest" "cluster_secret_store" {
+  yaml_body = <<-YAML
+    apiVersion: external-secrets.io/v1beta1
+    kind: ClusterSecretStore
+    metadata:
+      name: global-secret-store
+    spec:
+      provider:
+        aws:
+          service: SecretsManager
+          region: ${var.region}
+          auth:
+            jwt:
+              serviceAccountRef:
+                name: external-secrets-sa
+                namespace: external-secrets
+  YAML
+
+  depends_on = [helm_release.external_secrets]
 }

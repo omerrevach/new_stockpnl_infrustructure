@@ -1,8 +1,3 @@
-variable "name" {
-  type        = string
-  description = "Name prefix for resources"
-}
-
 variable "cluster_name" {
   type        = string
   description = "Name of the EKS cluster"
@@ -11,11 +6,6 @@ variable "cluster_name" {
 variable "oidc_provider_arn" {
   type        = string
   description = "ARN of the OIDC Provider"
-}
-
-variable "region" {
-  type        = string
-  description = "AWS region"
 }
 
 variable "eks_cluster_endpoint" {
@@ -31,4 +21,9 @@ variable "eks_cluster_token" {
 variable "eks_cluster_ca" {
   type        = string
   description = "EKS cluster CA certificate"
+}
+
+variable "vpc_id" {
+  type        = string
+  description = "ID of the VPC"
 }
