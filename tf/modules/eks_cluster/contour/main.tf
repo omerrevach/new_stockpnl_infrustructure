@@ -15,8 +15,8 @@ resource "helm_release" "contour" {
     <<-EOT
     envoy:
       service:
-        type: ClusterIP  # Changed from NodePort
-        externalTrafficPolicy: null  # Remove invalid policy
+        type: ClusterIP
+        externalTrafficPolicy: null
       resources:
         requests:
           cpu: 100m
