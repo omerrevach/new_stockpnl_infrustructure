@@ -1,6 +1,6 @@
 # StockPNL Infrastructure
 
-## 📖 Overview
+## Overview
 
 This repository contains the **Terraform code** to deploy and manage the **StockPNL infrastructure** on AWS. It provisions an **Amazon EKS cluster**, manages IAM roles, and installs necessary controllers such as **AWS Load Balancer Controller** and **Contour Ingress Controller** for efficient traffic management.
 
