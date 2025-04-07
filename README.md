@@ -1,4 +1,4 @@
-# 📌 StockPNL Infrastructure
+# StockPNL Infrastructure
 
 ## 📖 Overview
 
@@ -10,9 +10,9 @@ This setup follows **GitOps principles**, ensuring declarative infrastructure ma
 
 ---
 
-## 🚀 Deployment Steps
+## Deployment Steps
 
-### 1️⃣ Configure AWS CLI & Connect to Cluster
+### 1️ Configure AWS CLI & Connect to Cluster
 Ensure you are authenticated with AWS and set up the necessary access permissions:
 ```sh
 terraform init
@@ -27,7 +27,7 @@ aws eks update-kubeconfig --region eu-north-1 --name stockpnl
 * AWS Load Balancer Controller – For provisioning and managing AWS ALB/NLB.
 * Contour Ingress Controller – For handling ingress traffic efficiently.
 
-## ⚡ AWS Load Balancer Controller (ALB Controller)
+## AWS Load Balancer Controller (ALB Controller)
 
 The AWS Load Balancer Controller manages AWS Application Load Balancers (ALB) and Network Load Balancers (NLB) for Kubernetes applications. It automatically provisions ALBs when Kubernetes Ingress resources are deployed.
 
@@ -38,7 +38,7 @@ Why Use It?
 * Enables features like SSL termination, URL path-based routing, and WAF integration.
 
 
-## ⚡ Contour Ingress Controller
+## Contour Ingress Controller
 
 Contour is a high-performance ingress controller designed for managing traffic to Kubernetes workloads. It uses Envoy Proxy to provide dynamic traffic routing, TLS termination, and HTTP/2 support.
 
@@ -49,12 +49,12 @@ Why Use It?
 * Supports multi-tenant applications with delegation capabilities.
 
 
-## 🎯 Future Improvements
+## Future Improvements
 
 * Implement ArgoCD for full GitOps-based deployment.
 * Set up AWS Secrets Manager integration with External Secrets Operator.
 * Add service mesh support using Istio or Linkerd.
 
-## 📜 License
+## License
 
 This repository is licensed under the MIT License. See LICENSE for details.
