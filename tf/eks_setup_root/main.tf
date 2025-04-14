@@ -7,55 +7,47 @@ data "terraform_remote_state" "vpc" {
   }
 }
 
-data "aws_caller_identity" "current" {}
-
 module "eks" {
-  source             = "../modules/eks_cluster/eks"
-  name               = var.name
+  source             = "../modules/eks"
+  cluster_name       = var.name
   vpc_id             = data.terraform_remote_state.vpc.outputs.vpc_id
-  private_subnet_ids = data.terraform_remote_state.vpc.outputs.private_subnets
+  private_subnets    = data.terraform_remote_state.vpc.outputs.private_subnets
 }
 
-module "node_groups" {
-  source             = "../modules/eks_cluster/node_group"
-  name               = var.name
+module "eks_blueprints_addons" {
+  source             = "../modules/eks_blueprints_addons"
   cluster_name       = module.eks.cluster_name
-  private_subnet_ids = data.terraform_remote_state.vpc.outputs.private_subnets
+  cluster_endpoint   = module.eks.cluster_endpoint
+  cluster_version    = module.eks.cluster_version
+  oidc_provider_arn  = module.eks.oidc_provider_arn
+  vpc_id             = data.terraform_remote_state.vpc.outputs.vpc_id
+  region             = "eu-north-1"
+  
+  depends_on = [ module.eks ]
 }
 
-module "ebs_csi_driver" {
-  source               = "../modules/eks_cluster/ebs_csi_driver"
-  cluster_name         = module.eks.cluster_name
-  oidc_provider_arn    = module.eks.cluster_oidc_provider_arn
-  eks_cluster_endpoint = module.eks.cluster_endpoint
-  eks_cluster_token    = module.eks.cluster_token
-  eks_cluster_ca       = module.eks.cluster_ca
+resource "time_sleep" "wait_for_lb_controller" {
+  depends_on = [module.eks_blueprints_addons]
+  create_duration = "30s"
 }
 
-module "aws_lb_controller" {
-  source               = "../modules/eks_cluster/aws_lb_controller"
-  cluster_name         = module.eks.cluster_name
-  oidc_provider_arn    = module.eks.cluster_oidc_provider_arn
-  eks_cluster_endpoint = module.eks.cluster_endpoint
-  eks_cluster_token    = module.eks.cluster_token
-  eks_cluster_ca       = module.eks.cluster_ca
-  vpc_id               = data.terraform_remote_state.vpc.outputs.vpc_id
-}
+resource "kubectl_manifest" "cluster_secret_store" {
+  yaml_body = <<-YAML
+    apiVersion: external-secrets.io/v1beta1
+    kind: ClusterSecretStore
+    metadata:
+      name: global-secret-store
+    spec:
+      provider:
+        aws:
+          service: SecretsManager
+          region: "eu-north-1"
+          auth:
+            jwt:
+              serviceAccountRef:
+                name: external-secrets-sa
+                namespace: external-secrets
+  YAML
 
-module "contour" {
-  source               = "../modules/eks_cluster/contour"
-  eks_cluster_endpoint = module.eks.cluster_endpoint
-  eks_cluster_token    = module.eks.cluster_token
-  eks_cluster_ca       = module.eks.cluster_ca
-}
-
-module "secrets" {
-  source               = "../modules/eks_cluster/secrets"
-  name                 = var.name
-  cluster_name         = module.eks.cluster_name
-  oidc_provider_arn    = module.eks.cluster_oidc_provider_arn
-  eks_cluster_endpoint = module.eks.cluster_endpoint
-  eks_cluster_token    = module.eks.cluster_token
-  eks_cluster_ca       = module.eks.cluster_ca
-  region               = "eu-north-1"
+  depends_on = [time_sleep.wait_for_lb_controller]
 }
