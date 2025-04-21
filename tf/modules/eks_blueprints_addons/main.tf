@@ -92,7 +92,6 @@ module "eks_blueprints_addons" {
             alb.ingress.kubernetes.io/load-balancer-attributes: idle_timeout.timeout_seconds=120
             alb.ingress.kubernetes.io/ssl-redirect: '443'
             alb.ingress.kubernetes.io/certificate-arn: ${data.aws_acm_certificate.argocd.arn}
-            alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:eu-north-1:590183919160:certificate/3f05f383-36e1-4b11-8520-c51a378d9631
             external-dns.alpha.kubernetes.io/hostname: argocd.stockpnl.com
           hosts:
             - argocd.stockpnl.com
