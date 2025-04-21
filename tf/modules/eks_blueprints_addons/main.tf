@@ -11,12 +11,10 @@ module "eks_blueprints_addons" {
   enable_external_secrets = true
   enable_external_dns = true
   
-  # Route53 zone ARN configuration
   external_dns_route53_zone_arns = [
     "arn:aws:route53:::hostedzone/Z022564630P941WV72XMM"
   ]
   
-  # Configure external-dns
   external_dns = {
     set = [
       {
@@ -42,7 +40,6 @@ module "eks_blueprints_addons" {
     ]
   }
   
-  # Configure the AWS Load Balancer Controller
   aws_load_balancer_controller = {
     set = [
       {
@@ -52,7 +49,6 @@ module "eks_blueprints_addons" {
     ]
   }
   
-  # Configure External Secrets
   external_secrets = {
     set = [
       {
@@ -62,7 +58,6 @@ module "eks_blueprints_addons" {
     ]
   }
   
-  # Configure ArgoCD with settings from the working example
   argocd = {
     namespace     = "argocd"
     chart_version = "5.51.6"
