@@ -14,27 +14,42 @@ module "eks" {
   cluster_endpoint_private_access = true
 
   enable_irsa = true
-
   enable_cluster_creator_admin_permissions = true
 
   cluster_addons = {
-    coredns    = { most_recent = true }
-    kube-proxy = { most_recent = true }
-    vpc-cni    = { most_recent = true }
+    coredns                = { most_recent = true }
+    kube-proxy             = { most_recent = true }
+    vpc-cni                = { most_recent = true }
+    aws-ebs-csi-driver     = { most_recent = true }
   }
 
   eks_managed_node_groups = {
     spot_nodes = {
-      desired_size = 2
-      min_size     = 1
-      max_size     = 5
+      desired_size  = 2
+      min_size      = 1
+      max_size      = 5
 
       instance_types = ["t3.medium"]
       capacity_type  = "SPOT"
+
+      force_update_version = true
+
+      iam_role_additional_policies = {
+        AmazonEBSCSIDriverPolicy = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
+      }
+
+      labels = {
+        role = "spot"
+      }
+
+      tags = {
+        "Name" = "spot-nodes"
+      }
     }
   }
 
   tags = {
     Environment = "prod"
+    Terraform   = "true"
   }
 }
