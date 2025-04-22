@@ -27,6 +27,7 @@ module "eks_blueprints_addons" {
   oidc_provider_arn  = module.eks.oidc_provider_arn
   vpc_id             = data.terraform_remote_state.vpc.outputs.vpc_id
   region             = "eu-north-1"
+  acm_cert_id = var.acm_cert_id
   
   depends_on = [time_sleep.wait_for_eks]
 }
@@ -58,57 +59,48 @@ resource "kubectl_manifest" "cluster_secret_store" {
   depends_on = [time_sleep.wait_for_addons]
 }
 
-resource "kubernetes_manifest" "argocd_apps" {
+# Deploys all my apps using argocd
+resource "kubectl_manifest" "argocd_apps" {
   for_each = {
     auth     = "auth-service/helm"
     trade    = "trade_service/helm"
     frontend = "frontend/helm"
+    mysql = "mysql/helm"
   }
-
-  manifest = {
-    apiVersion = "argoproj.io/v1alpha1"
-    kind       = "Application"
-    metadata = {
-      name      = "app-${each.key}"
-      namespace = "argocd"
-    }
-    spec = {
-      project = "default"
-
-      source = {
-        repoURL        = "https://github.com/omerrevach/stockpnl_manifests_test.git"
-        targetRevision = "main"
-        path           = each.value
-      }
-
-      destination = {
-        server    = "https://kubernetes.default.svc"
-        namespace = "default"
-      }
-
-      syncPolicy = {
-        automated = {
-          prune     = true
-          selfHeal  = true
-        }
-        syncOptions = [
-          "CreateNamespace=true",
-          "ApplyOutOfSyncOnly=true",
-          "RespectIgnoreDifferences=true"
-        ]
-      }
-
-      ignoreDifferences = [{
-        group = "apps"
-        kind  = "Deployment"
-        jsonPointers = ["/spec/template/spec/containers/0/image"]
-      }]
-    }
-  }
+  
+  yaml_body = <<-YAML
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: app-${each.key}
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: "https://github.com/omerrevach/stockpnl_manifests_test.git"
+    targetRevision: "main"
+    path: ${each.value}
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: "default"
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - "CreateNamespace=true"
+      - "ApplyOutOfSyncOnly=true"
+      - "RespectIgnoreDifferences=true"
+  ignoreDifferences:
+    - group: "apps"
+      kind: "Deployment"
+      jsonPointers:
+        - "/spec/template/spec/containers/0/image"
+YAML
 
   depends_on = [
-    module.eks_blueprints_addons,         # makes sure argocd deployed
-    time_sleep.wait_for_addons,           # that alb is ready
+    module.eks_blueprints_addons, # makes sure argocd deployed
+    time_sleep.wait_for_addons,   # that alb is ready
     kubectl_manifest.cluster_secret_store # makes sure secrets is ready just in case
   ]
 }

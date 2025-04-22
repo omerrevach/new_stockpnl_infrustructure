@@ -59,20 +59,17 @@ module "eks_blueprints_addons" {
   }
   
   argocd = {
-    namespace     = "argocd"
+    namespace = "argocd"
     chart_version = "5.51.6"
-    repository    = "https://argoproj.github.io/argo-helm"
+    repository = "https://argoproj.github.io/argo-helm"
     values = [
       <<-EOF
       server:
         extraArgs:
           - --insecure
-
         service:
           type: ClusterIP
           servicePortHttp: 8080
-          servicePortHttps: 8080
-
         ingress:
           enabled: true
           ingressClassName: alb
@@ -86,18 +83,17 @@ module "eks_blueprints_addons" {
             alb.ingress.kubernetes.io/success-codes: "200-399"
             alb.ingress.kubernetes.io/load-balancer-attributes: idle_timeout.timeout_seconds=120
             alb.ingress.kubernetes.io/ssl-redirect: '443'
-            alb.ingress.kubernetes.io/certificate-arn: ${data.aws_acm_certificate.argocd.arn}
+            alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:${var.region}:${data.aws_caller_identity.current.account_id}:certificate/${var.acm_cert_id}
             external-dns.alpha.kubernetes.io/hostname: argocd.stockpnl.com
           hosts:
             - argocd.stockpnl.com
           path: /
           pathType: Prefix
-
-      configs:
-        cm:
-          url: https://argocd.stockpnl.com
-        params:
-          server.insecure: "true"
+        configs:
+          cm:
+            url: https://argocd.stockpnl.com
+          params:
+            server.insecure: "true"
       EOF
     ]
   }

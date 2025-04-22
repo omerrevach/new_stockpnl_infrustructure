@@ -14,3 +14,4 @@ variable "app_domain_name" {
   type        = string
   default     = "stockpnl.com"
 }
+

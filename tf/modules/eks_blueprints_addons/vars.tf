@@ -22,6 +22,8 @@ variable "region" {
   type        = string
 }
 
+variable "acm_cert_id" {}
+
 variable "check_ingress" {
   description = "to check for the frontend-ingress existence"
   type        = bool
