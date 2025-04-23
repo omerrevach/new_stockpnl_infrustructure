@@ -1,17 +1,19 @@
-
 variable "name" {
   description = "Cluster name"
   type        = string
-  default     = "stockpnl"
 }
 
 variable "hosted_zone_id" {
+  description = "Hosted zone ID for Route53"
   type        = string
-  default     = "Z022564630P941WV72XMM" #  hosted zone ID for stockpnl.com
 }
 
 variable "app_domain_name" {
+  description = "Domain name for the application"
   type        = string
-  default     = "stockpnl.com"
 }
 
+variable "acm_cert_id" {
+  description = "ACM certificate ID for HTTPS"
+  type        = string
+}
